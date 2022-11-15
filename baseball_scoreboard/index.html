@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baseball Scoreboard</title>
+    <style>
+        table, th, td {
+            border-collapse: collapse;
+            border: 1px solid;
+        }
+    </style>
+</head>
+<body>
+    <h1>El Juego Perfecto MX</h1>
+    <button id="boton">Boton</button>
+    <button id="reset">Reset</button>
+    <div id="app"></div>
+
+    <p>Saved name is:</p>
+    <p id="demo"></p>
+    
+    <script>
+        let app = document.getElementById('app');
+        let teams = [];
+        let innings = [];
+        
+        let master = [
+            { type: 'thead', rows: [] },
+            { type: 'tbody', rows: [] },
+            { type: 'tfoot', rows: [] },
+        ];
+
+        let score_window = [
+            { type: 'thead', rows: [] },
+            { type: 'tbody', rows: [] },
+            { type: 'tfoot', rows: [] },
+        ];
+
+        let score = [
+            { name: 'C' },
+            { name: 'H' },
+            { name: 'E' },
+        ];
+
+        let myWindow;
+        
+        let tr;
+        let td;
+
+        init();
+
+        let boton = document.getElementById('boton');
+
+        boton.addEventListener('click', function() {
+            console.log(innings)
+        }, false);
+
+        boton = document.getElementById('reset');
+
+        boton.addEventListener('click', function() {
+            reset();
+        }, false);
+
+        tmp = document.getElementsByClassName('team');
+
+        for(var i = 0; i < tmp.length; i++) {
+            tmp[i].addEventListener('change', function(e) {
+                var index = e.target.getAttribute('id') == 'team_0' ? 0 : 1;
+                teams[index].name = e.target.value;
+                localStorage.setItem('teams', JSON.stringify(teams));
+                refresh();
+            }, false);
+        }
+
+        tmp = document.getElementsByClassName('color');
+
+        for(var i = 0; i < tmp.length; i++) {
+            tmp[i].addEventListener('change', function(e) {
+                var index = e.target.getAttribute('id') == 'team_0_color' ? 0 : 1;
+                teams[index].color = e.target.value;
+                localStorage.setItem('teams', JSON.stringify(teams));
+                refresh();
+            }, false);
+        }
+
+        refresh();
+
+        function init() {
+
+            if(localStorage.getItem('teams')) teams = JSON.parse(localStorage.getItem('teams')) ;
+            else {
+                teams = [
+                    {
+                        name: 'VISIT',
+                        color: 'red',
+                    },
+                    {
+                        name: 'LOCAL',
+                        color: 'blue',
+                    }
+                ];
+            }
+
+            if(localStorage.getItem('innings')) innings = JSON.parse(localStorage.getItem('innings')) ;
+            else {
+                for(var i = 1; i <= 9; i++) {
+                    innings.push({
+                        inning_no: i,
+                        inning: 'inning ' + i
+                    })
+                }
+
+                localStorage.setItem('innings', JSON.stringify(innings));
+            }
+
+            master[0].rows.push({columns: [{value: ''},{value: 'COLOR'}]});
+            score_window[0].rows.push({columns: [{value: ''}]});
+
+            for(var i = 0; i < teams.length; i++) {
+                var components = [];
+                master[1].rows.push({columns: [{components: [{type: 'input', class: 'team', value: teams[i].name, attrs: [{id: 'team_' + i }]}]},{components: [{type: 'input', class: 'color', value: teams[i].color, attrs: [{id: 'team_' + i + '_color' }]}]}] });
+                score_window[1].rows.push({columns: [{value: teams[i].name}]});
+            }
+
+            for(var i = 0; i < master.length; i++) {
+                for(var j = 0; j < master[i].rows.length; j++) {
+                    for(var l = 0; l < innings.length; l++) {
+                        master[i].rows[j].columns.push({value: i == 0 ? l + 1 : '' });
+                    }
+                }
+            }
+
+            console.log(score_window)
+
+            table = document.createElement('table');
+            thead = document.createElement('thead');
+            tbody = document.createElement('tbody');
+            tfoot = document.createElement('tfoot');
+
+            table.setAttribute('border', 1);
+            
+            for(var i = 0; i < master.length; i++) {
+                for(var j = 0; j < master[i].rows.length; j++) {
+                    var tr = document.createElement('tr');
+                    for(var k = 0; k < master[i].rows[j].columns.length; k++) {
+                        var td = document.createElement(i == 0 ? 'th' : 'td');
+                        if(master[i].rows[j].columns[k].components) {
+                            for(var l = 0; l < master[i].rows[j].columns[k].components.length; l++) {
+                                var component = document.createElement(master[i].rows[j].columns[k].components[l].type);
+                                if(master[i].rows[j].columns[k].components[l].type == 'input') component.value = master[i].rows[j].columns[k].components[l].value;
+                                else component.innerHTML = master[i].rows[j].columns[k].components[l].value;
+                                if(master[i].rows[j].columns[k].components[l].class) component.classList.add(master[i].rows[j].columns[k].components[l].class);
+                                if(master[i].rows[j].columns[k].components[l].attrs) {
+                                    for(var m = 0; m < master[i].rows[j].columns[k].components[l].attrs.length; m++) {
+                                        Object.keys(master[i].rows[j].columns[k].components[l].attrs[m]).forEach((key, i_) => {
+                                            component.setAttribute(key, master[i].rows[j].columns[k].components[l].attrs[m][key]);
+                                        });
+                                    }
+                                }
+                                td.append(component);
+                            }
+                        }
+                        else td.innerText = master[i].rows[j].columns[k].value;
+                        tr.append(td);
+                    }
+
+                    for(var k = 0; k < score.length; k++) {
+                        var td = document.createElement(i == 0 ? 'th' : 'td');
+                        td.innerText = i == 0 ? score[k].name : '';
+                        tr.append(td);
+                    }
+
+                    if(i == 0) thead.append(tr);
+                    else if(i == 1) tbody.append(tr);
+                    else if(i == 2) tfoot.append(tr);
+                }
+            }
+
+            table.append(thead);
+            table.append(tbody);
+            table.append(tfoot);
+
+            inning_id = 1;
+            
+            localStorage.setItem('teams', JSON.stringify(teams));
+
+            if(localStorage.getItem("inning_id")) inning_id = localStorage.getItem("inning_id");
+            else localStorage.setItem("inning_id", inning_id);
+
+            app.append(table); 
+console.log(myWindow)
+            if(myWindow) {
+
+            }
+            else
+            myWindow = window.open("", "MsgWindow", "width=200,height=100;menubar=no");
+
+            table = document.createElement('table');
+            thead = document.createElement('thead');
+            tbody = document.createElement('tbody');
+            tfoot = document.createElement('tfoot');
+
+            table.setAttribute('border', 1);
+            
+            for(var i = 0; i < score_window.length; i++) {
+                for(var j = 0; j < score_window[i].rows.length; j++) {
+                    var tr = document.createElement('tr');
+                    for(var k = 0; k < score_window[i].rows[j].columns.length; k++) {
+                        var td = document.createElement(i == 0 ? 'th' : 'td');
+                        if(score_window[i].rows[j].columns[k].components) {
+                            /* for(var l = 0; l < score_window[i].rows[j].columns[k].components.length; l++) {
+                                var component = document.createElement(score_window[i].rows[j].columns[k].components[l].type);
+                                if(score_window[i].rows[j].columns[k].components[l].type == 'input') component.value = score_window[i].rows[j].columns[k].components[l].value;
+                                else component.innerHTML = score_window[i].rows[j].columns[k].components[l].value;
+                                if(score_window[i].rows[j].columns[k].components[l].class) component.classList.add(score_window[i].rows[j].columns[k].components[l].class);
+                                if(score_window[i].rows[j].columns[k].components[l].attrs) {
+                                    for(var m = 0; m < score_window[i].rows[j].columns[k].components[l].attrs.length; m++) {
+                                        Object.keys(score_window[i].rows[j].columns[k].components[l].attrs[m]).forEach((key, i_) => {
+                                            component.setAttribute(key, score_window[i].rows[j].columns[k].components[l].attrs[m][key]);
+                                        });
+                                    }
+                                }
+                                td.append(component);
+                            } */
+                        }
+                        else td.innerText = score_window[i].rows[j].columns[k].value;
+                        tr.append(td);
+                    }
+
+                    for(var k = 0; k < score.length; k++) {
+                        var td = document.createElement(i == 0 ? 'th' : 'td');
+                        td.innerText = i == 0 ? score[k].name : '';
+                        tr.append(td);
+                    }
+
+                    if(i == 0) thead.append(tr);
+                    else if(i == 1) tbody.append(tr);
+                    else if(i == 2) tfoot.append(tr);
+                }
+            }
+
+            table.append(thead);
+            table.append(tbody);
+            table.append(tfoot);
+
+
+
+
+
+            myWindow.document.body.append(table);
+        }
+
+        function refresh() {
+            teams = JSON.parse(localStorage.getItem('teams'));
+            
+            for(var i in teams) {
+                var team = document.getElementById('team_' + i);
+                var team_color = document.getElementById('team_' + i + '_color');
+                team.value = teams[i].name;
+                team_color.value = teams[i].color;
+            }
+        }
+
+        function reset() {
+            localStorage.clear();
+            init();
+            refresh();
+        }
+    </script>
+    
+</body>
+</html>
+    
